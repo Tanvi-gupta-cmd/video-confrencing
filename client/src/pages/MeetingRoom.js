@@ -31,6 +31,68 @@ function MeetingRoom() {
   const [cameraOn, setCameraOn] = useState(true);
   const [isSharing, setIsSharing] = useState(false);
 
+  const startMeeting = useCallback(async () => {
+
+  try {
+
+    console.log("🎥 Starting Meeting");
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true,
+    });
+
+    localStream.current = stream;
+
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+    }
+
+    stream.getTracks().forEach((track) => {
+
+      const alreadyAdded = peer.peer
+        .getSenders()
+        .find(sender => sender.track === track);
+
+      if (!alreadyAdded) {
+        peer.peer.addTrack(track, stream);
+    }
+    
+    });
+
+    peer.peer.onicecandidate = ({ candidate }) => {
+
+      if (candidate && remoteSocketId.current) {
+
+        socket.emit("ice-candidate", {
+          target: remoteSocketId.current,
+          candidate,
+        });
+
+      }
+
+    };
+
+    console.log("Joining Room:", roomId);
+
+    socket.emit("join-room", roomId);
+
+    setParticipants(prev =>
+      prev.includes(socket.id)
+        ? prev
+        : [...prev, socket.id]
+    );
+
+  }
+
+  catch (err) {
+
+    console.log(err);
+
+  }
+
+}, [roomId]);
+
   useEffect(() => {
 
     if (started.current) return;
@@ -141,67 +203,7 @@ function MeetingRoom() {
 
   }, [startMeeting]);
 
-  const startMeeting = useCallback(async () => {
-
-  try {
-
-    console.log("🎥 Starting Meeting");
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
-
-    localStream.current = stream;
-
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = stream;
-    }
-
-    stream.getTracks().forEach((track) => {
-
-      const alreadyAdded = peer.peer
-        .getSenders()
-        .find(sender => sender.track === track);
-
-      if (!alreadyAdded) {
-        peer.peer.addTrack(track, stream);
-    }
-    
-    });
-
-    peer.peer.onicecandidate = ({ candidate }) => {
-
-      if (candidate && remoteSocketId.current) {
-
-        socket.emit("ice-candidate", {
-          target: remoteSocketId.current,
-          candidate,
-        });
-
-      }
-
-    };
-
-    console.log("Joining Room:", roomId);
-
-    socket.emit("join-room", roomId);
-
-    setParticipants(prev =>
-      prev.includes(socket.id)
-        ? prev
-        : [...prev, socket.id]
-    );
-
-  }
-
-  catch (err) {
-
-    console.log(err);
-
-  }
-
-}, [roomId]);
+  
 
 // ==========================
 // Chat Auto Scroll
