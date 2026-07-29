@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import socket from "../socket";
@@ -139,9 +139,9 @@ function MeetingRoom() {
 
     };
 
-  }, []);
+  }, [startMeeting]);
 
-  const startMeeting = async () => {
+  const startMeeting = useCallback(async () => {
 
   try {
 
@@ -166,8 +166,8 @@ function MeetingRoom() {
 
       if (!alreadyAdded) {
         peer.peer.addTrack(track, stream);
-      }
-
+    }
+    
     });
 
     peer.peer.onicecandidate = ({ candidate }) => {
@@ -201,7 +201,7 @@ function MeetingRoom() {
 
   }
 
-};
+}, [roomId]);
 
 // ==========================
 // Chat Auto Scroll
